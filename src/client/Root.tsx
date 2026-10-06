@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
 import type { RequestId } from 'handkey-client'
 import { ApproveForm } from './ApproveForm.js'
@@ -18,6 +18,13 @@ export function Root({ t, handkey: factory, language: languageStore, ui }: RootP
   const title = useId()
   const open = view.kind !== 'closed'
   const run = snapshot.approval
+  const order = useRef<{ initial: readonly RequestId[]; all: readonly RequestId[] } | null>(null)
+  if (!open) order.current = null
+  else if (snapshot.kind === 'active') {
+    const ids = snapshot.pending.map(request => request.id)
+    if (!order.current) order.current = { initial: ids, all: ids }
+    else order.current = { ...order.current, all: [...order.current.all, ...ids.filter(id => !order.current?.all.includes(id))] }
+  }
   const navigate = (next: typeof view) => { setNotice(null); ui.navigate(next) }
   const close = () => navigate({ kind: 'closed' })
 
@@ -50,18 +57,20 @@ export function Root({ t, handkey: factory, language: languageStore, ui }: RootP
     })
   }
   function body() {
-    if (run) return <><ApproveForm handkey={handkey} snapshot={snapshot} ids={[]} t={t} onDismiss={() => navigate({ kind: 'list', selected: [] })} />{snapshot.kind === 'register' && <p className="opa-muted">{t('settings.registerPointer')}</p>}</>
+    if (run) return <><ApproveForm handkey={handkey} snapshot={snapshot} ids={[]} t={t} language={language} now={now} onDismiss={() => navigate({ kind: 'list', selected: [] })} />{snapshot.kind === 'register' && <p className="opa-muted">{t('settings.registerPointer')}</p>}</>
     if (snapshot.kind === 'register') return <p className="opa-muted">{t('settings.registerPointer')}</p>
     switch (view.kind) {
-      case 'approve': return <ApproveForm handkey={handkey} snapshot={snapshot} ids={view.ids} t={t} onDismiss={() => navigate({ kind: 'list', selected: [] })} />
+      case 'approve': return <ApproveForm handkey={handkey} snapshot={snapshot} ids={view.ids} t={t} language={language} now={now} onDismiss={() => navigate({ kind: 'list', selected: [] })} />
       case 'list': {
-        const selected = snapshot.pending.filter(request => view.selected.includes(request.id) && request.operation.kind !== 'unrecognized').map(request => request.id)
+        const pending = (order.current?.all ?? []).flatMap(id => { const request = snapshot.pending.find(request => request.id === id); return request ? [request] : [] })
+        const firstNew = pending.find(request => !order.current?.initial.includes(request.id))?.id
+        const selected = pending.filter(request => view.selected.includes(request.id) && request.operation.kind !== 'unrecognized').map(request => request.id)
         return <>
           {snapshot.list.kind === 'loading' && <p role="status">{t('health.updating')}</p>}
           {snapshot.list.kind === 'stale' && <div role="status"><p>{t('health.stale')} {t(faultKey(snapshot.list.fault))}</p><button type="button" onClick={() => void handkey.refresh()}>{t('action.retry')}</button></div>}
           {snapshot.unreadable > 0 && <p role="status">{t('health.unreadable', { count: number(snapshot.unreadable, language) })}</p>}
           {snapshot.pending.length === 0 && <p>{t('list.empty')}</p>}
-          {snapshot.pending.map(request => <RequestCard key={request.id} request={request} t={t} language={language} now={now} selected={selected.includes(request.id)} disabled={false} onSelect={() => ui.select(request.id)} onDeny={() => deny([request.id])} />)}
+          {pending.map(request => <Fragment key={request.id}>{request.id === firstNew && <h3>{t('list.newSinceOpen')}</h3>}<RequestCard request={request} t={t} language={language} now={now} selected={selected.includes(request.id)} disabled={false} onSelect={() => ui.select(request.id)} onDeny={() => deny([request.id])} /></Fragment>)}
           <div className="opa-footer"><button className="opa-primary" type="button" disabled={selected.length === 0} onClick={() => navigate({ kind: 'approve', ids: selected })}>{t('action.approveSelected', { count: number(selected.length, language) })}</button><button type="button" disabled={selected.length === 0} onClick={() => deny(selected)}>{t('action.denySelected')}</button></div>
         </>
       }

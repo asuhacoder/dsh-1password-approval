@@ -39,21 +39,28 @@ function Details({ operation, t }: { operation: Operation; t: Translate }) {
   }
 }
 
+export function RequestReview({ request, t, language, now, full = false }: {
+  request: Request; t: Translate; language: string; now: number; full?: boolean
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const long = request.reason.length > 180 || request.reason.includes('\n')
+  return <>
+    <div className="opa-headline"><Headline request={request} t={t} /><time>{countdown(request.deadline, now, language)}</time></div>
+    <ul className="opa-secrets">{request.secrets.map(secret => <li key={secret.key}><Secret secret={secret} t={t} /></li>)}</ul>
+    <strong>{t('card.reason')}</strong><p className={full || expanded || !long ? '' : 'opa-clamp'}>{request.reason}</p>
+    {long && !full && <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{t(expanded ? 'card.collapse' : 'card.expand')}</button>}
+    <p><span className="opa-muted">{t('card.source')} · </span>{request.source || t('card.localSocket')}</p>
+    <p>{request.lease.kind === 'single-use' ? t('lease.singleUse') : t('lease.window', { minutes: number(request.lease.seconds / 60, language), uses: number(request.lease.maxUses, language) })}</p>
+    <ul className="opa-chips">{request.cautions.map(caution => <li className="opa-warning" key={caution}>{t(cautionKey(caution))}</li>)}</ul>
+    {full ? <section aria-label={t('card.details')}><Details operation={request.operation} t={t} /></section> : <details><summary>{t('card.details')}</summary><Details operation={request.operation} t={t} /></details>}
+  </>
+}
+
 export function RequestCard({ request, t, language, now, selected, disabled, onSelect, onDeny }: {
   request: Request; t: Translate; language: string; now: number; selected: boolean; disabled: boolean
   onSelect: () => void; onDeny: () => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const long = request.reason.length > 180 || request.reason.includes('\n')
-  return <article className="opa-card">
-    <div className="opa-headline"><Headline request={request} t={t} /><time>{countdown(request.deadline, now, language)}</time></div>
-    <ul className="opa-secrets">{request.secrets.map(secret => <li key={secret.key}><Secret secret={secret} t={t} /></li>)}</ul>
-    <strong>{t('card.reason')}</strong><p className={expanded || !long ? '' : 'opa-clamp'}>{request.reason}</p>
-    {long && <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{t(expanded ? 'card.collapse' : 'card.expand')}</button>}
-    <p><span className="opa-muted">{t('card.source')} · </span>{request.source || t('card.localSocket')}</p>
-    <p>{request.lease.kind === 'single-use' ? t('lease.singleUse') : t('lease.window', { minutes: number(request.lease.seconds / 60, language), uses: number(request.lease.maxUses, language) })}</p>
-    <ul className="opa-chips">{request.cautions.map(caution => <li className="opa-warning" key={caution}>{t(cautionKey(caution))}</li>)}</ul>
-    <details><summary>{t('card.details')}</summary><Details operation={request.operation} t={t} /></details>
+  return <article className="opa-card"><RequestReview request={request} t={t} language={language} now={now} />
     <div className="opa-actions">{request.operation.kind !== 'unrecognized' && <label className="opa-select"><input type="checkbox" aria-label={`${t('action.select')} ${request.id}`} checked={selected} disabled={disabled} onChange={onSelect} />{t('action.select')}</label>}<button type="button" disabled={disabled} onClick={onDeny}>{t('action.deny')}</button></div>
   </article>
 }

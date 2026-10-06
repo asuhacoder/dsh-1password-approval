@@ -33,7 +33,9 @@ The conversation dock row appears only for pending requests, retained approval p
 
 Open the dock row, or select **Review approvals** in Settings, to refresh the list. Cards show the self-declared agent, delivery method, time remaining, secret references, reason, source, lease, cautions, and operation details. Verified names show the vault, item, and field. Unverified or legacy names carry explicit warnings. Unrecognized methods can only be denied.
 
-Select requests and choose **Approve selected**. Review the selected headlines, then autofill the device key. The client approves sequentially and confirms each result with a GET. Progress and stop reasons remain until **Dismiss**, including when the browser session ends. An ended-session message points to **Settings > Handkey** without opening a registration form in the dialog. Closing the dialog during approval does not stop the run.
+Cards keep their order while the dialog is open. Later requests appear at the end under **New since you opened this**. Reopening the dialog resets its order to the current broker list.
+
+Select requests and choose **Approve selected**. Review each request's secrets, reason, source, lease, cautions, and expanded operation details before you autofill the device key. Requests that leave the pending list show a **no longer pending** notice and cannot be approved. If none remain, the approval button is disabled. The client approves sequentially and confirms each result with a GET. Progress and stop reasons remain until **Dismiss**, including when the browser session ends. An ended-session message points to **Settings > Handkey** without opening a registration form in the dialog. Closing the dialog during approval does not stop the run.
 
 **Deny** needs no device key. Settings shows the broker URL, device ID, and session expiry. It can unregister this browser or start registration again. Registration and session-limit recovery stay inline in Settings.
 
