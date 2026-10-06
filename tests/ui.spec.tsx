@@ -189,6 +189,14 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     expect(screen.getByText('1 requests could not be read')).toBeDefined()
   })
 
+  it('accents a replacement request even when the pending count is unchanged', async () => {
+    const actor = harness(true); actor.pending([wire('old')]); const user = mount(actor); await open(user); await user.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: '1 pending approvals' }).className).not.toContain('opa-accent')
+    actor.pending([wire('new')]); await act(async () => actor.change())
+    await waitFor(() => expect(screen.getByRole('button', { name: '1 pending approvals' }).className).toContain('opa-accent'))
+    await open(user); expect(screen.getByRole('checkbox').getAttribute('aria-label')).toBe('Select new'); expect(screen.getByRole('button', { name: '1 pending approvals' }).className).not.toContain('opa-accent')
+  })
+
   it('marks a new pending count, clears its accent on open, and explains stale data with retry', async () => {
     const actor = harness(true); actor.pending([wire()]); const user = mount(actor)
     const pill = await screen.findByRole('button', { name: '1 pending approvals' }); expect(pill.className).toContain('opa-accent')
@@ -211,6 +219,13 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     const user = mount(actor, true); await user.click(screen.getByRole('button', { name: 'Unregister this browser' }))
     await screen.findByRole('button', { name: 'Register this browser' }); expect(actor.persistence.read()).toBeNull(); expect(document.querySelector('.opa-dock')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull()
     const call = actor.calls.find(call => call.path === '/v1/sessions/browser/revoke'); expect(call?.body).toBeUndefined(); expect(call?.headers.get('Authorization')).toBe('Bearer view-only')
+  })
+
+  it('reports a busy denial when a batch begins before the denial is delivered', async () => {
+    const actor = harness(true); actor.pending([wire()]); const user = mount(actor); await open(user)
+    actor.handkey.deny = async () => ({ kind: 'busy' })
+    await user.click(screen.getByRole('button', { name: 'Deny' }))
+    expect((await screen.findByText('Wait for the approval batch to finish before denying requests.')).textContent).toBe('Wait for the approval batch to finish before denying requests.')
   })
 
   it('disables a card during its deny and sends only one denial', async () => {

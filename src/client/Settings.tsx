@@ -31,7 +31,7 @@ export function Settings({ t, handkey: factory, language: languageStore, ui, clo
           <p>{t('register.expires', { days: number(Math.max(0, Math.ceil((snapshot.session.viewUntil - Date.now()) / 86_400_000)), language) })}</p>
           <div className="opa-actions">
             <span>{t('pill.pending', { count: number(snapshot.pending.length, language) })}</span>
-            <button type="button" onClick={event => { const opener = event.currentTarget; close(); ui.open(snapshot.pending.length, run !== null, opener) }}>{t(run ? 'pill.progress' : 'settings.openApprovals')}</button>
+            <button type="button" onClick={event => { const opener = event.currentTarget; close(); ui.open(snapshot.pending.map(request => request.id), run !== null, opener) }}>{t(run ? 'pill.progress' : 'settings.openApprovals')}</button>
           </div>
           <div className="opa-settings">
             <button type="button" disabled={run?.kind === 'running'} onClick={() => ui.registration({ kind: 'register', target: null })}>{t('register.reregister')}</button>
@@ -46,7 +46,7 @@ export function Settings({ t, handkey: factory, language: languageStore, ui, clo
     <h2>{t('settings.title')}</h2>
     <p className="opa-muted">{t('settings.description')}</p>
     {body()}
-    {snapshot.kind === 'register' && run && <button type="button" onClick={event => { close(); ui.open(0, true, event.currentTarget) }}>{t('pill.progress')}</button>}
+    {snapshot.kind === 'register' && run && <button type="button" onClick={event => { close(); ui.open([], true, event.currentTarget) }}>{t('pill.progress')}</button>}
     {registration.kind === 'register' && snapshot.kind === 'active' && <button type="button" onClick={() => ui.registration({ kind: 'session' })}>{t('action.cancel')}</button>}
   </section>
 }

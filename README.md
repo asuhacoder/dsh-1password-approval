@@ -29,7 +29,7 @@ If the device reaches its session limit, autofill again to **List sessions**. Se
 
 ## Review requests
 
-The conversation dock row appears only for pending requests, retained approval progress, or an ended-session pointer to Settings. Its accent border marks a count increase since the dialog was last opened. The dock is conversation-scoped and is absent when no conversation is open. Settings always shows the pending count for an active browser session.
+The conversation dock row appears only for pending requests, retained approval progress, or an ended-session pointer to Settings. Its accent border marks any request ID not present when the dialog was last opened, including a new request that replaces a denied one. The dock is conversation-scoped and is absent when no conversation is open. Settings always shows the pending count for an active browser session.
 
 Open the dock row, or select **Review approvals** in Settings, to refresh the list. Cards show the self-declared agent, delivery method, time remaining, secret references, reason, source, lease, cautions, and operation details. Verified names show the vault, item, and field. Unverified or legacy names carry explicit warnings. Unrecognized methods can only be denied.
 

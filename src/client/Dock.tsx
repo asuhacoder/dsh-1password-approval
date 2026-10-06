@@ -9,10 +9,11 @@ export function Dock({ t, handkey: factory, language: languageStore, ui }: RootP
   const state = useSyncExternalStore(ui.subscribe, ui.getSnapshot, ui.getSnapshot)
   const language = useSyncExternalStore(languageStore.subscribe, languageStore.getSnapshot, languageStore.getSnapshot)
   const run = snapshot.approval
-  const count = snapshot.kind === 'active' ? snapshot.pending.length : 0
+  const ids = snapshot.kind === 'active' ? snapshot.pending.map(request => request.id) : []
+  const count = ids.length
   if (!run && count === 0) {
     if (snapshot.kind === 'register' && (snapshot.reason === 'expired' || snapshot.reason === 'rejected' || snapshot.reason === 'invalid-saved-session')) return <div className="opa-root opa-dock"><p className="opa-muted">{t('settings.registerPointer')}</p></div>
     return null
   }
-  return <div className="opa-root opa-dock"><button className={`opa-dock-button${count > state.lastOpenedCount ? ' opa-accent' : ''}`} type="button" onClick={event => ui.open(count, run !== null, event.currentTarget)}>{t(run ? 'pill.progress' : 'pill.pending', { count: number(count, language) })}</button></div>
+  return <div className="opa-root opa-dock"><button className={`opa-dock-button${ids.some(id => !state.seenIds.includes(id)) ? ' opa-accent' : ''}`} type="button" onClick={event => ui.open(ids, run !== null, event.currentTarget)}>{t(run ? 'pill.progress' : 'pill.pending', { count: number(count, language) })}</button></div>
 }

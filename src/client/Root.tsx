@@ -66,7 +66,8 @@ export function Root({ t, handkey: factory, language: languageStore, ui }: RootP
     for (const id of available) denying.current.add(id)
     setDenyingIds([...denying.current]); setNotice(null)
     void handkey.deny(available).then(result => {
-      if (result.kind === 'not-registered') setNotice(t('form.notRegistered'))
+      if (result.kind === 'busy') setNotice(t('deny.busy'))
+      else if (result.kind === 'not-registered') setNotice(t('form.notRegistered'))
       else if (result.stopped) setNotice(t(outcomeKey(result.stopped)))
       else setNotice(t('deny.finished', { count: number(result.items.length, language) }))
     }).finally(() => { for (const id of available) denying.current.delete(id); setDenyingIds([...denying.current]) })
