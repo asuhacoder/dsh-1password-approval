@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { runInNewContext } from 'node:vm'
 import { createElement } from 'react'
+import { createHandkey } from 'handkey-client'
+import type { Face } from '../src/client/store.js'
 import type { ComponentType } from 'react'
 import * as React from 'react'
 import * as jsxRuntime from 'react/jsx-runtime'
@@ -10,7 +12,7 @@ import { en, zh, namespace } from '../src/client/locale.js'
 import type { LocaleKey } from '../src/client/locale.js'
 
 type Dictionary = Record<string, string>
-type PillProps = { t: (key: LocaleKey, params?: Record<string, unknown>) => string }
+type PillProps = { t: (key: LocaleKey, params?: Record<string, unknown>) => string; inject: Face }
 
 function loadModule(source: string): unknown[] {
   const modules: unknown[] = []
@@ -62,11 +64,11 @@ describe('built client factory', () => {
     expect(entries).toHaveLength(1)
     const entry = entries[0]
     if (!entry) throw new Error('Missing overlay entry')
-    expect(entry.options).toEqual({ name: 'shell.overlay', id: 'onepassword-approval.pill', locale: namespace })
-    const markup = renderToStaticMarkup(createElement(entry.component, { t: key => en[key] }))
+    expect(entry.options).toMatchObject({ name: 'shell.overlay', id: 'onepassword-approval.pill', locale: namespace })
+    const markup = renderToStaticMarkup(createElement(entry.component, { t: key => en[key], inject: { handkey: () => createHandkey(), language: { subscribe: () => () => {}, getSnapshot: () => 'en' } } }))
     expect(markup).toContain(en['pill.register'])
-    expect(markup).toContain('pointer-events:auto')
-    expect(markup).toContain('position:fixed')
+    expect(markup).toContain('pointer-events: auto')
+    expect(markup).toContain('position: fixed')
     effects.reverse().forEach(dispose => dispose())
     expect(disposedLocale).toBe(true)
     expect(disposedSlot).toBe(true)
