@@ -1,8 +1,3 @@
----
-name: handkey
-description: Request approval-gated 1Password access through Handkey. Prefer delivery to a command or focused field over revealing secrets to the AI provider.
----
-
 # Use Handkey with approval
 
 ## Check access
