@@ -21,10 +21,10 @@ function reducer(view: View, action: Action): View {
   }
 }
 
-export function Root({ t, inject }: RootProps) {
-  const [handkey] = useState(inject.handkey)
+export function Root({ t, handkey: createHandkey, language: languageStore }: RootProps) {
+  const [handkey] = useState(createHandkey)
   const snapshot = useSyncExternalStore(handkey.subscribe, handkey.getSnapshot, handkey.getSnapshot)
-  const language = useSyncExternalStore(inject.language.subscribe, inject.language.getSnapshot, inject.language.getSnapshot)
+  const language = useSyncExternalStore(languageStore.subscribe, languageStore.getSnapshot, languageStore.getSnapshot)
   const [view, dispatch] = useReducer(reducer, { kind: 'closed' })
   const [now, setNow] = useState(Date.now)
   const [notice, setNotice] = useState<string | null>(null)

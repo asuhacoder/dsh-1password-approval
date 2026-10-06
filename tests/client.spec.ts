@@ -12,7 +12,7 @@ import { en, zh, namespace } from '../src/client/locale.js'
 import type { LocaleKey } from '../src/client/locale.js'
 
 type Dictionary = Record<string, string>
-type PillProps = { t: (key: LocaleKey, params?: Record<string, unknown>) => string; inject: Face }
+type PillProps = { t: (key: LocaleKey, params?: Record<string, unknown>) => string } & Face
 
 function loadModule(source: string): unknown[] {
   const modules: unknown[] = []
@@ -38,7 +38,7 @@ describe('built client factory', () => {
     if (!exports || typeof exports !== 'object' || !('inject' in exports) || !('apply' in exports) || typeof exports.apply !== 'function') throw new Error('Invalid plugin exports')
     expect(exports.inject).toEqual(['slots', 'locale'])
     const locales: { name: string; dictionaries: { en: Dictionary; zh: Dictionary } }[] = []
-    const entries: { options: { name: string; id: string; locale: string }; component: ComponentType<PillProps> }[] = []
+    const entries: { options: { name: string; id: string; locale: string; inject: () => Face }; component: ComponentType<PillProps> }[] = []
     const injected: string[] = []
     const effects: (() => void)[] = []
     let disposedLocale = false
@@ -46,6 +46,8 @@ describe('built client factory', () => {
     exports.apply({
       effect(callback: () => () => void) { effects.push(callback()) },
       locale: {
+        subscribe: () => () => {},
+        getSnapshot: () => ({ active: 'en' }),
         register(name: string, dictionaries: { en: Dictionary; zh: Dictionary }) {
           locales.push({ name, dictionaries })
           return () => { disposedLocale = true }
@@ -53,19 +55,20 @@ describe('built client factory', () => {
       },
       slots: {
         inject(name: string, callback: () => () => void) { injected.push(name); effects.push(callback()) },
-        register(options: { name: string; id: string; locale: string }, component: ComponentType<PillProps>) {
+        register(options: { name: string; id: string; locale: string; inject: () => Face }, component: ComponentType<PillProps>) {
           entries.push({ options, component })
           return () => { disposedSlot = true }
         },
       },
-    })
+    }, () => createHandkey())
     expect(locales).toEqual([{ name: namespace, dictionaries: { en, zh } }])
     expect(injected).toEqual(['shell.overlay'])
     expect(entries).toHaveLength(1)
     const entry = entries[0]
     if (!entry) throw new Error('Missing overlay entry')
     expect(entry.options).toMatchObject({ name: 'shell.overlay', id: 'onepassword-approval.pill', locale: namespace })
-    const markup = renderToStaticMarkup(createElement(entry.component, { t: key => en[key], inject: { handkey: () => createHandkey(), language: { subscribe: () => () => {}, getSnapshot: () => 'en' } } }))
+    // Same composition as the dsh renderer: the registration's inject() result is spread into props.
+    const markup = renderToStaticMarkup(createElement(entry.component, { t: key => en[key], ...entry.options.inject() }))
     expect(markup).toContain(en['pill.register'])
     expect(markup).toContain('pointer-events: auto')
     expect(markup).toContain('position: fixed')

@@ -13,4 +13,5 @@ export interface Face {
   readonly handkey: () => Handkey
   readonly language: { readonly subscribe: (listener: () => void) => () => void; readonly getSnapshot: () => string }
 }
-export type RootProps = PropsLocale<'onepassword-approval'> & { readonly inject: Face }
+// dsh spreads the object returned by the slot's `inject` option directly into the component props.
+export type RootProps = PropsLocale<'onepassword-approval'> & Face

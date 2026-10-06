@@ -14,7 +14,7 @@ const t: Translate = (key, params) => {
 }
 afterEach(cleanup)
 function mount(actor: ReturnType<typeof harness>) {
-  render(<Root t={t} inject={{ handkey: () => actor.handkey, language: { subscribe: () => () => {}, getSnapshot: () => 'en' } }} />)
+  render(<Root t={t} handkey={() => actor.handkey} language={{ subscribe: () => () => {}, getSnapshot: () => 'en' }} />)
   return userEvent.setup()
 }
 async function open(user: ReturnType<typeof userEvent.setup>) { await user.click(await screen.findByRole('button', { name: /Register handkey|pending approvals|Approval progress/ })) }
