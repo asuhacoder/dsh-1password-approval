@@ -201,6 +201,13 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     const call = actor.calls.find(call => call.path === '/v1/sessions/browser/revoke'); expect(call?.body).toBeUndefined(); expect(call?.headers.get('Authorization')).toBe('Bearer view-only')
   })
 
+  it('restores dialog focus after deny and closes from document Escape', async () => {
+    const actor = harness(true); actor.pending([wire()]); actor.queue('POST', '/v1/requests/r1/deny', () => { actor.pending([]); return json({ status: 'denied' }) })
+    const user = mount(actor); await open(user); await user.click(screen.getByRole('button', { name: 'Deny' })); await screen.findByText('No pending requests.')
+    const dialog = screen.getByRole('dialog'); expect(dialog.contains(document.activeElement)).toBe(true)
+    fireEvent.keyDown(document, { key: 'Escape' }); expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
   it('denies one without a body and removes it after re-list', async () => {
     const actor = harness(true); actor.pending([wire()])
     actor.queue('POST', '/v1/requests/r1/deny', () => { actor.pending([]); return json({ status: 'denied' }) })
@@ -240,9 +247,9 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     const user = mount(actor, true); await open(user); await user.click(await screen.findByRole('checkbox', { name: 'Select r1' })); await user.click(screen.getByRole('checkbox', { name: 'Select r2' })); await user.click(screen.getByRole('button', { name: 'Approve selected (2)' })); await user.type(keyInput(), KEY); await user.click(screen.getByRole('button', { name: 'Approve' }))
     await screen.findByText('Done · Session ended'); expect(screen.getByText('Done · Not sent')).toBeDefined(); expect(screen.getByText('Batch stopped: Session ended')).toBeDefined()
     expect(screen.getByText(en['register.rejected'])).toBeDefined(); expect(actor.handkey.getSnapshot()).toMatchObject({ kind: 'register', approval: { kind: 'finished', stopped: 'session-ended' } })
-    actor.pending([]); await user.type(keyInput(), SECOND_KEY); await user.click(screen.getByRole('button', { name: 'Register this browser' }))
+    await user.keyboard('{Escape}'); actor.pending([]); await user.type(keyInput(), SECOND_KEY); await user.click(screen.getByRole('button', { name: 'Register this browser' }))
     await waitFor(() => expect(actor.handkey.getSnapshot().kind).toBe('active'))
-    expect(screen.getByText('Done · Session ended')).toBeDefined(); leak(actor, [KEY, SECOND_KEY])
+    await open(user); expect(screen.getByText('Done · Session ended')).toBeDefined(); leak(actor, [KEY, SECOND_KEY])
     await user.click(screen.getByRole('button', { name: 'Dismiss' })); await screen.findByText('No pending requests.'); expect(actor.handkey.getSnapshot()).toMatchObject({ approval: null })
   })
 

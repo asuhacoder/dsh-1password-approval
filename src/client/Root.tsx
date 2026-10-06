@@ -36,7 +36,15 @@ export function Root({ t, handkey: factory, language: languageStore, ui }: RootP
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => { window.clearInterval(timer); ui.restoreFocus() }
   }, [open, handkey, ui])
-  useEffect(() => { if (open && dialog.current && !dialog.current.contains(document.activeElement)) dialog.current.focus() }, [open, view.kind, snapshot.kind, run !== null])
+  useEffect(() => { if (open && dialog.current && !dialog.current.contains(document.activeElement)) dialog.current.focus() })
+  useEffect(() => {
+    if (!open) return
+    const refocus = () => { if (dialog.current && !dialog.current.contains(document.activeElement)) dialog.current.focus() }
+    const escape = (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); ui.navigate({ kind: 'closed' }) } }
+    document.addEventListener('focusin', refocus)
+    document.addEventListener('keydown', escape, true)
+    return () => { document.removeEventListener('focusin', refocus); document.removeEventListener('keydown', escape, true) }
+  }, [open, ui])
   useEffect(() => { setNotice(null) }, [open])
 
   function trap(event: KeyboardEvent<HTMLDivElement>) {
