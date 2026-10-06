@@ -12,7 +12,7 @@ The plugin targets `dsh >=0.2.0-rc.2 <0.3.0` and Node.js `^22.19.0 || >=24`.
 
 Handkey is experimental. Session-limit recovery requires a broker with the key-authenticated session list and revoke routes ([handkey#7](https://github.com/asuhacoder/handkey/pull/7)). The broker needs a separate real 1Password CLI binary. The agent uses the Handkey binary or its `op` shim.
 
-DSH desktop is unsupported. Outside `--dev`, the broker accepts only HTTPS origins in `--origins`, so a DSH page served over plain HTTP cannot reach a production broker. The plugin itself accepts an `http` broker URL. Only the broker's `--dev` option, which is limited to numeric loopback, makes such a broker exist.
+DSH desktop is unsupported. Outside `--dev`, the broker accepts only HTTPS origins in `--origins`, so a DSH page served over plain HTTP cannot reach a production broker. The plugin accepts plain HTTP only for loopback development brokers at `127.0.0.0/8` or `[::1]`. LAN origins such as `http://192.168.1.10` are refused. The broker's `--dev` option is also limited to numeric loopback.
 
 ## Register this browser
 

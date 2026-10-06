@@ -15,7 +15,7 @@ export function validationKey(kind: 'empty-key' | 'invalid-key' | 'invalid-broke
   switch (kind) {
     case 'empty-key': return 'form.emptyKey'
     case 'invalid-key': return 'form.invalidKey'
-    case 'invalid-broker-url': return 'form.invalidBroker'
+    case 'invalid-broker-url': return 'form.brokerOriginRequired'
     case 'invalid-device-id': return 'form.invalidDevice'
     case 'invalid-name': return 'form.invalidName'
     case 'key-spent': return 'form.keySpent'

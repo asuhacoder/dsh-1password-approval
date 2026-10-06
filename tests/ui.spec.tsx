@@ -208,6 +208,12 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     await user.click(screen.getByRole('button', { name: 'Retry' })); await waitFor(() => expect(screen.queryByText(/The request list is stale/)).toBeNull())
   })
 
+  it('explains that non-loopback HTTP broker origins are invalid and clears the key', async () => {
+    const actor = harness(); const user = mount(actor); await fillRegistration(user); await user.clear(screen.getByLabelText('Broker URL')); await user.type(screen.getByLabelText('Broker URL'), 'http://192.168.1.10'); await user.click(screen.getByRole('button', { name: 'Register this browser' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Use an HTTPS broker origin without a path, credentials, query, or fragment. Plain HTTP is accepted only for a loopback development broker (127.0.0.0/8 or [::1]).')
+    expect(keyInput().value).toBe(''); expect(actor.calls.filter(call => call.method === 'POST')).toEqual([]); leak(actor)
+  })
+
   it('clears malformed key entries before local validation and makes no registration POST', async () => {
     const actor = harness(); const user = mount(actor); await open(user); await fillRegistration(user, 'bad-key-entry')
     const input = keyInput(); fireEvent.submit(input.closest('form')!); expect(input.value).toBe('')
