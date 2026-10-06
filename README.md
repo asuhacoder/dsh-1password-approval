@@ -4,15 +4,15 @@ A DeepSeek Harness plugin for reviewing Handkey approval requests. The host regi
 
 ## Status
 
-Registration, request review, denial, sequential approval progress, and session-limit recovery are implemented. Automated tests use the real `handkey-client` actor with scripted HTTP responses and SSE streams. Live iOS Safari autofill is not yet verified.
+Registration, request review, denial, sequential approval progress, and session-limit recovery are implemented. Automated tests use the real `handkey-client` actor with scripted HTTP responses and SSE streams. The flows were also run by hand in dsh 0.2.0-rc.2 on desktop Chromium against a `--dev` broker. 1Password autofill on iOS Safari is not yet verified.
 
 ## Compatibility
 
 The plugin targets `dsh >=0.2.0-rc.2 <0.3.0` and Node.js `^22.19.0 || >=24`.
 
-Handkey is experimental. Session-limit recovery requires a broker with the key-authenticated session list and revoke routes, available on Handkey main after PR #7. The broker needs a separate real 1Password CLI binary. The agent uses the Handkey binary or its `op` shim.
+Handkey is experimental. Session-limit recovery requires a broker with the key-authenticated session list and revoke routes ([handkey#7](https://github.com/asuhacoder/handkey/pull/7)). The broker needs a separate real 1Password CLI binary. The agent uses the Handkey binary or its `op` shim.
 
-DSH desktop is unsupported. A DSH page at `http://127.0.0.1` is unsupported. Plain HTTP is limited to numeric-loopback broker development with Handkey's `--dev` option.
+DSH desktop is unsupported. Outside `--dev`, the broker accepts only HTTPS origins in `--origins`, so a DSH page served over plain HTTP cannot reach a production broker. The plugin itself accepts an `http` broker URL. Only the broker's `--dev` option, which is limited to numeric loopback, makes such a broker exist.
 
 ## Register this browser
 
@@ -29,7 +29,7 @@ If the device reaches its session limit, autofill again to **List sessions**. Se
 
 ## Review requests
 
-The conversation dock row appears only for pending requests, retained approval progress, or an ended-session pointer to Settings. Its accent border marks a count increase since the dialog was last opened. It makes no sound and sends no notifications. The dock is conversation-scoped and is absent when no conversation is open. Settings always shows the pending count for an active browser session.
+The conversation dock row appears only for pending requests, retained approval progress, or an ended-session pointer to Settings. Its accent border marks a count increase since the dialog was last opened. The dock is conversation-scoped and is absent when no conversation is open. Settings always shows the pending count for an active browser session.
 
 Open the dock row, or select **Review approvals** in Settings, to refresh the list. Cards show the self-declared agent, delivery method, time remaining, secret references, reason, source, lease, cautions, and operation details. Verified names show the vault, item, and field. Unverified or legacy names carry explicit warnings. Unrecognized methods can only be denied.
 
@@ -41,7 +41,7 @@ Select requests and choose **Approve selected**. Review the selected headlines, 
 
 Credential inputs are uncontrolled. Only `takeRegistration` and `takeKey` read the key input. They empty it before validation or any network call. Raw keys never enter React state, context, refs, logs, errors, snapshots, or persistence. Each submit consumes a single-use opaque key handle.
 
-Browser persistence holds the broker URL, device ID, session ID, view token, expiry, and schema version. The view token grants only list, read, and deny access. Enter approval keys only in the client, never in an agent conversation or CLI arguments.
+Browser persistence holds the broker URL, device ID, session ID, view token, expiry, and schema version. The view token cannot approve. It can list and read requests, deny them, read events, list the device's sessions, and end its own session. Enter approval keys only in the client, never in an agent conversation or CLI arguments.
 
 JavaScript cannot guarantee erasure of temporary input strings or fetch buffers. All agent-provided text renders as React text, not HTML, Markdown, or request-derived links.
 
@@ -50,23 +50,20 @@ JavaScript cannot guarantee erasure of temporary input strings or fetch buffers.
 - Browser storage coordination is best effort across tabs. A race can require registration again.
 - Each tab opens one SSE stream. Several tabs may exhaust HTTP/1.1 connection limits.
 - Approval progress is not shared across tabs.
-- Live iOS Safari and 1Password autofill still need device testing. Automated DOM tests cannot establish password-manager behavior.
+- The pending row is absent when no conversation is open, because every composer slot in dsh is session-scoped. Settings always shows the count.
+- dsh exposes no way to open Settings from a plugin, so the ended-session row is text only.
 
 ## Agent access
 
-The bundled `handkey` skill directs agents to request specific fields and delivery methods. It prefers a fixed-origin proxy, command environment injection, or typing into a focused field over raw disclosure. Every approval request has a specific reason and agent name. Requests retain private receipt files for status, reuse, and cancellation.
+The bundled `handkey` skill directs agents to request specific fields and delivery methods. It prefers a fixed-origin proxy, command environment injection, or typing into a focused field over raw disclosure. The skill tells agents to give a specific reason and agent name. The full text is in [handkey.md](<skill/handkey.md>).
 
-`HANDKEY_ENDPOINT` normally names a Unix socket such as `unix:///absolute/handkey.sock`. The CLI also accepts an HTTPS broker origin and the `--endpoint` alternative. Neither the endpoint nor plugin registration grants approval by itself.
-
-Handkey's `run` masks exact fetched values unless `--no-masking` is approved. Masking does not prevent a command from transforming or splitting a secret. Receipt files are bearer capabilities and must not enter logs or conversations.
+The agent needs the Handkey binary and `HANDKEY_ENDPOINT`, normally a Unix socket such as `unix:///absolute/handkey.sock`. Neither the endpoint nor plugin registration grants approval by itself.
 
 ## Development
 
-Run `pnpm install`, then `pnpm verify`. `handkey-client` is a development dependency at `file:../handkey-client` and esbuild bundles it into the client artifact. CI needs `handkey-client` published to npm first, then this specifier becomes a version range and the lockfile must be regenerated.
+Run `pnpm install`, then `pnpm verify`. `handkey-client` is a development dependency at `file:../handkey-client` and esbuild bundles it into the client artifact. CI checks out and builds `handkey-client` beside this repository. After `handkey-client` is published to npm, replace the specifier with a version range and regenerate the lockfile.
 
-Verification typechecks strict plugin code, exercises the real skill registry and built browser factory, runs real-actor component flows and key leak checks, and checks that the client artifact requires only `react` and `react/jsx-runtime`. Library declaration checking is skipped because the published dsh client declarations reference undeclared development-only packages.
-
-No plugin installation, profile changes, or publication was performed during development.
+Verification typechecks strict plugin code, exercises the real skill registry and built browser factory, runs real-actor component flows and key leak checks, and checks that the client artifact requires only `react` and `react/jsx-runtime`. `skipLibCheck` is on because the published dsh client declarations import packages that are not on npm.
 
 ## License
 
