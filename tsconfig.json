@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM"], "types": ["node"],
+    "module": "NodeNext", "moduleResolution": "NodeNext", "jsx": "react-jsx",
+    "verbatimModuleSyntax": true, "strict": true, "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true, "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true, "isolatedModules": true,
+    "skipLibCheck": true, "declaration": true, "declarationMap": true, "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx"]
+}
