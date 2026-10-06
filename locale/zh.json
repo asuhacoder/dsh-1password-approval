@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "1Password 审批",
-    "description": "用于 DeepSeek Harness 的 Handkey 审批客户端框架。审批界面尚未实现。"
+    "description": "在 DeepSeek Harness 中审查 Handkey 秘密请求，通过 1Password 自动填充批准，并管理浏览器会话。"
   }
 }

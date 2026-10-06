@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "1Password approval",
-    "description": "Handkey approval client scaffold for DeepSeek Harness. The approval UI is not implemented yet."
+    "description": "Review Handkey secret requests, approve with 1Password autofill, and manage browser sessions in DeepSeek Harness."
   }
 }

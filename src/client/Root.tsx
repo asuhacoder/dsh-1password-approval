@@ -47,6 +47,10 @@ export function Root({ t, inject }: RootProps) {
     return () => { window.clearInterval(timer); returnFocus?.focus() }
   }, [open, handkey])
 
+  useEffect(() => {
+    if (open && dialog.current && !dialog.current.contains(document.activeElement)) dialog.current.focus()
+  }, [open, view.kind, snapshot.kind, run !== null])
+
   function trap(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return }
     if (event.key !== 'Tab') return
