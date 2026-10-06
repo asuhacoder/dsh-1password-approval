@@ -41,7 +41,7 @@ export function RegisterForm({ handkey, snapshot, target, t, onRegistered, onLim
     {reason === 'rejected' && <p role="status">{t('register.rejected')}</p>}
     {reason === 'invalid-saved-session' && <p role="status">{t('register.invalidSaved')}</p>}
     <p>{t('register.help')}</p>
-    <form className="opa-form" onSubmit={event => {
+    <form className="opa-form" noValidate onSubmit={event => {
       event.preventDefault()
       const form = event.currentTarget
       const input = takeRegistration({ brokerUrl: inputElement(form, 'broker'), deviceId: inputElement(form, 'username'), key: inputElement(form, 'password'), name: inputElement(form, 'sessionName') })

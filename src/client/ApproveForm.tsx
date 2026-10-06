@@ -8,7 +8,7 @@ import type { LocaleKey } from './locale.js'
 import type { Translate } from './store.js'
 
 export function approvalOf(snapshot: Snapshot) {
-  return snapshot.kind === 'active' ? snapshot.approval : null
+  return snapshot.approval
 }
 
 export function ApproveForm({ handkey, snapshot, ids, t, onDismiss }: {

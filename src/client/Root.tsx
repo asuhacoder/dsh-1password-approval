@@ -67,13 +67,15 @@ export function Root({ t, inject }: RootProps) {
       if (result.kind === 'not-registered') setNotice(t('form.notRegistered'))
       else if (result.stopped) setNotice(t(outcomeKey(result.stopped)))
       else setNotice(t('deny.finished', { count: number(result.items.length, language) }))
-      void handkey.refresh()
     })
   }
 
   function body() {
-    if (run) return <ApproveForm handkey={handkey} snapshot={snapshot} ids={[]} t={t} onDismiss={() => navigate(snapshot.kind === 'active' ? { kind: 'list', selected: [] } : { kind: 'register', target: null })} />
     if (view.kind === 'sessionLimit') return <SessionLimit handkey={handkey} state={view.state} t={t} language={language} onState={state => navigate({ kind: 'sessionLimit', state })} onRegister={() => navigate({ kind: 'register', target: { brokerUrl: view.state.brokerUrl, deviceId: view.state.deviceId } })} />
+    if (run) return <>
+      <ApproveForm handkey={handkey} snapshot={snapshot} ids={[]} t={t} onDismiss={() => navigate(snapshot.kind === 'active' ? { kind: 'list', selected: [] } : { kind: 'register', target: null })} />
+      {(snapshot.kind === 'register' || view.kind === 'register') && run.kind === 'finished' && <RegisterForm handkey={handkey} snapshot={snapshot} target={null} t={t} onRegistered={() => navigate({ kind: 'list', selected: [] })} onLimit={target => navigate({ kind: 'sessionLimit', state: { ...target, stage: 'list' } })} />}
+    </>
     if (snapshot.kind === 'register' || view.kind === 'register') return <RegisterForm handkey={handkey} snapshot={snapshot} target={view.kind === 'register' ? view.target : null} t={t} onRegistered={() => navigate({ kind: 'list', selected: [] })} onLimit={target => navigate({ kind: 'sessionLimit', state: { ...target, stage: 'list' } })} />
     switch (view.kind) {
       case 'approve': return <ApproveForm handkey={handkey} snapshot={snapshot} ids={view.ids} t={t} onDismiss={() => navigate({ kind: 'list', selected: [] })} />
@@ -94,7 +96,7 @@ export function Root({ t, inject }: RootProps) {
   }
 
   return <div className="opa-root"><style>{styles}</style>
-    {(snapshot.kind === 'register' || count > 0 || run || open) && <button ref={pill} className={`opa-pill${count > lastOpenedCount.current ? ' opa-accent' : ''}`} type="button" onClick={() => {
+    {(snapshot.kind === 'register' || count > 0 || run) && <button ref={pill} className={`opa-pill${count > lastOpenedCount.current ? ' opa-accent' : ''}`} type="button" onClick={() => {
       lastOpenedCount.current = count
       setNotice(null)
       navigate(run ? { kind: 'approve', ids: [] } : snapshot.kind === 'register' ? { kind: 'register', target: null } : { kind: 'list', selected: [] })

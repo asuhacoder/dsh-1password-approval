@@ -33,7 +33,7 @@ The pill shows the pending count. Its accent border marks a count increase since
 
 Open the pill to refresh the list. Cards show the self-declared agent, delivery method, time remaining, secret references, reason, source, lease, cautions, and operation details. Verified names show the vault, item, and field. Unverified or legacy names carry explicit warnings. Unrecognized methods can only be denied.
 
-Select requests and choose **Approve selected**. Review the selected headlines, then autofill the device key. The client approves sequentially and confirms each result with a GET. Progress and stop reasons remain until **Dismiss**. Closing the panel during approval hides the dialog but does not stop the run.
+Select requests and choose **Approve selected**. Review the selected headlines, then autofill the device key. The client approves sequentially and confirms each result with a GET. Progress and stop reasons remain until **Dismiss**, including when the browser session ends. A registration form appears beside the stopped run. Closing the panel during approval hides the dialog but does not stop the run.
 
 **Deny** needs no device key. The settings strip shows session expiry and can unregister this browser or start registration again. Expired or rejected sessions return to registration.
 

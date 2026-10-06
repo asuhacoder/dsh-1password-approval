@@ -67,12 +67,7 @@ export function faultKey(fault: Fault): LocaleKey {
   }
 }
 
-function isInstant(value: number): value is Instant {
-  return Number.isFinite(value) && Math.abs(value) <= 8_640_000_000_000_000
-}
-
 export function countdown(deadline: Instant, now: number, language: string): string {
-  if (!isInstant(now)) return ''
   const seconds = remaining(deadline, now)
   const number = new Intl.NumberFormat(language, { minimumIntegerDigits: 2, useGrouping: false })
   return `${number.format(Math.floor(seconds / 60))}:${number.format(seconds % 60)}`

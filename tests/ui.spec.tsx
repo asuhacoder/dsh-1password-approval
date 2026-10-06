@@ -73,7 +73,7 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     expect(mutations.map(call => call.path)).toEqual(['/v1/devices/device/sessions', '/v1/devices/device/sessions/list', '/v1/devices/device/sessions/old/revoke'])
     expect(JSON.parse(String(mutations[1]?.body))).toEqual({ key: KEY })
     expect(JSON.parse(String(mutations[2]?.body))).toEqual({ key: SECOND_KEY })
-    expect((screen.getByLabelText('Device ID') as HTMLInputElement).value).toBe('device')
+    const rememberedId = screen.getByLabelText('Device ID'); if (!(rememberedId instanceof HTMLInputElement)) throw new Error('Device input missing'); expect(rememberedId.value).toBe('device')
     leak(actor, [KEY, SECOND_KEY])
   })
 
@@ -107,6 +107,30 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     expect(screen.getByText('1 requests could not be read')).toBeDefined()
   })
 
+  it('marks a new pending count, clears its accent on open, and explains stale data with retry', async () => {
+    const actor = harness(true); actor.pending([wire()]); const user = mount(actor)
+    const pill = await screen.findByRole('button', { name: '1 pending approvals' }); expect(pill.className).toContain('opa-accent')
+    await open(user); expect(pill.className).not.toContain('opa-accent')
+    actor.pending([wire(), wire('r2')]); await act(async () => actor.change()); await screen.findByRole('checkbox', { name: 'Select r2' })
+    expect(pill.className).toContain('opa-accent'); await user.keyboard('{Escape}'); await open(user); expect(pill.className).not.toContain('opa-accent')
+    actor.queue('GET', '/v1/requests', new Error('network private')); await act(async () => actor.handkey.refresh())
+    expect(screen.getByText(/The request list is stale/)).toBeDefined(); expect(screen.getByText(/--origins/)).toBeDefined()
+    await user.click(screen.getByRole('button', { name: 'Retry' })); await waitFor(() => expect(screen.queryByText(/The request list is stale/)).toBeNull())
+  })
+
+  it('clears malformed key entries before local validation and makes no registration POST', async () => {
+    const actor = harness(); const user = mount(actor); await open(user); await fillRegistration(user, 'bad-key-entry')
+    const input = keyInput(); fireEvent.submit(input.closest('form')!); expect(input.value).toBe('')
+    expect(screen.getByRole('alert').textContent).toBe(en['form.invalidKey']); expect(actor.calls.filter(call => call.method === 'POST')).toEqual([]); leak(actor, ['bad-key-entry'])
+  })
+
+  it('unregisters with the view token and returns to registration', async () => {
+    const actor = harness(true); actor.pending([wire()]); actor.queue('POST', '/v1/sessions/browser/revoke', json({ status: 'revoked' }))
+    const user = mount(actor); await open(user); await screen.findByRole('checkbox'); await user.click(screen.getByRole('button', { name: 'Unregister this browser' }))
+    await screen.findByRole('button', { name: 'Register this browser' }); expect(actor.persistence.read()).toBeNull()
+    const call = actor.calls.find(call => call.path === '/v1/sessions/browser/revoke'); expect(call?.body).toBeUndefined(); expect(call?.headers.get('Authorization')).toBe('Bearer view-only')
+  })
+
   it('denies one without a body and removes it after re-list', async () => {
     const actor = harness(true); actor.pending([wire()])
     actor.queue('POST', '/v1/requests/r1/deny', () => { actor.pending([]); return json({ status: 'denied' }) })
@@ -138,6 +162,18 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     await screen.findByText('Done · Key rejected'); expect(screen.getByText('Done · Not sent')).toBeDefined(); expect(screen.getByText('Batch stopped: Key rejected')).toBeDefined()
     expect(actor.calls.filter(call => call.path.endsWith('/approve')).map(call => call.path)).toEqual(['/v1/requests/r1/approve'])
     leak(actor); await user.click(screen.getByRole('button', { name: 'Dismiss' })); expect(actor.handkey.getSnapshot()).toMatchObject({ approval: null })
+  })
+
+  it('retains stopped progress across session end and re-registration until dismissed', async () => {
+    const actor = harness(true); actor.pending([wire('r1'), wire('r2')]); actor.queue('POST', '/v1/requests/r1/approve', json({}, 401)); actor.queue('GET', '/v1/requests/r1', json({}, 401))
+    actor.queue('POST', '/v1/devices/device/sessions', json(created()))
+    const user = mount(actor); await open(user); await user.click(await screen.findByRole('checkbox', { name: 'Select r1' })); await user.click(screen.getByRole('checkbox', { name: 'Select r2' })); await user.click(screen.getByRole('button', { name: 'Approve selected (2)' })); await user.type(keyInput(), KEY); await user.click(screen.getByRole('button', { name: 'Approve' }))
+    await screen.findByText('Done · Session ended'); expect(screen.getByText('Done · Not sent')).toBeDefined(); expect(screen.getByText('Batch stopped: Session ended')).toBeDefined()
+    expect(screen.getByText(en['register.rejected'])).toBeDefined(); expect(actor.handkey.getSnapshot()).toMatchObject({ kind: 'register', approval: { kind: 'finished', stopped: 'session-ended' } })
+    actor.pending([]); await user.type(keyInput(), SECOND_KEY); await user.click(screen.getByRole('button', { name: 'Register this browser' }))
+    await waitFor(() => expect(actor.handkey.getSnapshot().kind).toBe('active'))
+    expect(screen.getByText('Done · Session ended')).toBeDefined(); leak(actor, [KEY, SECOND_KEY])
+    await user.click(screen.getByRole('button', { name: 'Dismiss' })); await screen.findByText('No pending requests.'); expect(actor.handkey.getSnapshot()).toMatchObject({ approval: null })
   })
 
   it('returns to registration with the rejected session reason after a list 401', async () => {
