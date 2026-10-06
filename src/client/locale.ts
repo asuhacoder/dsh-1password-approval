@@ -123,6 +123,7 @@ export const en = {
   'approve.stopped': 'Batch stopped: {reason}',
   'approve.runningHint': 'Closing this panel only hides it. Approval continues in this tab.',
   'outcome.done': 'Done',
+  'deny.busy': 'Wait for the approval batch to finish before denying requests.',
   'deny.finished': 'Denied or already decided: {count}.',
 }
 
@@ -251,6 +252,7 @@ export const zh: Record<LocaleKey, string> = {
   'approve.stopped': '批量审批已停止：{reason}',
   'approve.runningHint': '关闭面板只会隐藏它。审批会在此标签页继续。',
   'outcome.done': '已完成',
+  'deny.busy': '请等待当前批次审批结束后再拒绝请求。',
   'deny.finished': '已拒绝或已处理 {count} 个请求。',
 }
 

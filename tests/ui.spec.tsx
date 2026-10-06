@@ -100,6 +100,18 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     expect(screen.queryByRole('dialog')).toBeNull(); expect(document.querySelector('.opa-dock')).toBeNull(); leak(actor)
   })
 
+  it('prefills the revoked recovery target after Settings is unmounted and remounted', async () => {
+    const actor = harness(); const ui = createUiStore(); actor.queue('POST', '/v1/devices/device/sessions', json({}, 409))
+    actor.queue('POST', '/v1/devices/device/sessions/list', json([{ session_id: 'old', name: 'Old phone', created_at: iso(NOW), view_until: iso(NOW + 86_400_000), current: false }]))
+    actor.queue('POST', '/v1/devices/device/sessions/old/revoke', json({ status: 'revoked' }))
+    let user = mount(actor, true, ui); await fillRegistration(user); await user.click(screen.getByRole('button', { name: 'Register this browser' })); await screen.findByRole('button', { name: 'List sessions' })
+    await user.type(keyInput(), KEY); await user.click(screen.getByRole('button', { name: 'List sessions' })); await user.click(await screen.findByRole('button', { name: 'Revoke session' })); await user.type(keyInput(), SECOND_KEY); fireEvent.submit(keyInput().closest('form')!); await screen.findByRole('button', { name: 'Register this browser' })
+    cleanup(); user = mount(actor, true, ui)
+    const broker = screen.getByLabelText('Broker URL'), device = screen.getByLabelText('Device ID')
+    if (!(broker instanceof HTMLInputElement) || !(device instanceof HTMLInputElement)) throw new Error('Missing registration inputs')
+    expect(broker.value).toBe('https://broker.example'); expect(device.value).toBe('device'); expect(keyInput().value).toBe(''); leak(actor, [KEY, SECOND_KEY])
+  })
+
   it('keeps registration again inline and restores the active session on cancel', async () => {
     const actor = harness(true); const user = mount(actor, true); await screen.findByText('0 pending approvals')
     await user.click(screen.getByRole('button', { name: 'Register again' })); expect(screen.getByRole('button', { name: 'Register this browser' }).textContent).toBe('Register this browser'); expect(screen.queryByRole('dialog')).toBeNull()
@@ -199,6 +211,14 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
     const user = mount(actor, true); await user.click(screen.getByRole('button', { name: 'Unregister this browser' }))
     await screen.findByRole('button', { name: 'Register this browser' }); expect(actor.persistence.read()).toBeNull(); expect(document.querySelector('.opa-dock')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull()
     const call = actor.calls.find(call => call.path === '/v1/sessions/browser/revoke'); expect(call?.body).toBeUndefined(); expect(call?.headers.get('Authorization')).toBe('Bearer view-only')
+  })
+
+  it('disables a card during its deny and sends only one denial', async () => {
+    const actor = harness(true); actor.pending([wire()]); const post = deferred<Response>(); actor.queue('POST', '/v1/requests/r1/deny', () => post.promise)
+    const user = mount(actor); await open(user); const deny = screen.getByRole('button', { name: 'Deny' }); await user.click(deny)
+    expect(deny.hasAttribute('disabled')).toBe(true); expect(screen.getByRole('checkbox').hasAttribute('disabled')).toBe(true)
+    await user.click(deny); expect(actor.calls.filter(call => call.path.endsWith('/deny'))).toHaveLength(1)
+    actor.pending([]); await act(async () => post.resolve(json({ status: 'denied' }))); await screen.findByText('No pending requests.')
   })
 
   it('restores dialog focus after deny and closes from document Escape', async () => {
