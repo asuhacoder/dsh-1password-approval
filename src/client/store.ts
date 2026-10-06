@@ -24,10 +24,10 @@ export function createUiStore() {
     navigate(view: View) { publish({ ...snapshot, view }) },
     select(id: RequestId) { const view = snapshot.view; if (view.kind === 'list') publish({ ...snapshot, view: { kind: 'list', selected: view.selected.includes(id) ? view.selected.filter(candidate => candidate !== id) : [...view.selected, id] } }) },
     registration(registration: RegistrationView) { publish({ ...snapshot, registration }) },
-    restoreFocus() { returnFocus?.focus(); returnFocus = null },
+    restoreFocus() { if (returnFocus?.isConnected) returnFocus.focus(); returnFocus = null },
+    dispose() { returnFocus = null; publish({ view: { kind: 'closed' }, registration: { kind: 'session' }, lastOpenedCount: 0 }); listeners.clear() },
   }
 }
-export const uiStore = createUiStore()
 export type Translate = PropsLocale<'onepassword-approval'>['t']
 export interface Face {
   readonly handkey: () => Handkey

@@ -8,7 +8,7 @@ import type { Handkey } from 'handkey-client'
 import { Root } from './Root.js'
 import { Dock } from './Dock.js'
 import { Settings } from './Settings.js'
-import { getHandkey, uiStore } from './store.js'
+import { getHandkey, createUiStore } from './store.js'
 import { en, zh, namespace } from './locale.js'
 import { styles } from './styles.js'
 
@@ -20,6 +20,8 @@ export function apply(ctx: Context, factory: () => Handkey = getHandkey): void {
     const style = document.createElement('style'); style.dataset.plugin = 'dsh-1password-approval'; style.textContent = styles; document.head.append(style)
     return () => style.remove()
   })
+  const uiStore = createUiStore()
+  ctx.effect(() => () => uiStore.dispose())
   let actor: Handkey | undefined
   const handkey = () => actor ??= factory()
   const face = () => ({ handkey, ui: uiStore, language: { subscribe: (listener: () => void) => ctx.locale.subscribe(listener), getSnapshot: () => ctx.locale.getSnapshot().active || navigator.language } })

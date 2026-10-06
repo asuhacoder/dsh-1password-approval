@@ -43,7 +43,7 @@ describe('built client factory', () => {
     let language = 'en'
     let changed = () => {}
     let createdActors = 0
-    exports.apply({
+    const context = {
       effect(callback: () => () => void) { effects.push(callback()) },
       on(name: string, listener: () => void) { expect(name).toBe('locale/change'); changed = listener; return () => { changed = () => {} } },
       locale: {
@@ -55,7 +55,8 @@ describe('built client factory', () => {
         inject(name: string, callback: () => () => void) { injected.push(name); effects.push(callback()) },
         register(options: Options, component: ComponentType<EntryProps>) { const entry = { options, component, disposed: false }; entries.push(entry); return () => { entry.disposed = true } },
       },
-    }, () => { createdActors++; return createHandkey() })
+    }
+    exports.apply(context, () => { createdActors++; return createHandkey() })
     expect(locales).toEqual([{ name: namespace, dictionaries: { en, zh } }])
     expect(injected).toEqual(['settings.section', 'conversation.input.dock', 'shell.overlay'])
     expect(entries.map(entry => ({ name: entry.options.name, id: entry.options.id, order: entry.options.order }))).toEqual([
@@ -71,7 +72,13 @@ describe('built client factory', () => {
     expect(createdActors).toBe(1)
     language = 'zh'; changed()
     expect(entries[0]?.disposed).toBe(true); expect(entries).toHaveLength(4); expect(entries[3]?.options.label?.()).toBe('Handkey')
+    const firstUi = entries[0]?.options.inject().ui; if (!firstUi) throw new Error('Missing UI store')
+    firstUi.navigate({ kind: 'list', selected: [] })
     effects.reverse().forEach(dispose => dispose())
     expect(disposedLocale).toBe(true); expect(entries.every(entry => entry.disposed)).toBe(true)
+    exports.apply(context, () => createHandkey())
+    const secondUi = entries.at(-1)?.options.inject().ui; if (!secondUi) throw new Error('Missing second UI store')
+    expect(secondUi.getSnapshot().view.kind).toBe('closed'); expect(secondUi).not.toBe(firstUi)
+    expect(firstUi.getSnapshot().view.kind).toBe('closed')
   })
 })
