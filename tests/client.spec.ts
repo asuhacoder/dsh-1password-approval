@@ -12,14 +12,13 @@ import { en, zh, namespace } from '../src/client/locale.js'
 import type { LocaleKey } from '../src/client/locale.js'
 
 type Dictionary = Record<string, string>
-type PillProps = { t: (key: LocaleKey, params?: Record<string, unknown>) => string } & Face
-
+type EntryProps = { t: (key: LocaleKey, params?: Record<string, unknown>) => string; close: () => void } & Face
+type Options = { name: string; id: string; locale: string; order?: number; label?: () => string; inject: () => Face }
 function loadModule(source: string): unknown[] {
   const modules: unknown[] = []
-  runInNewContext(source, { window: { __ModuleLoader__: { load(value: unknown) { modules.push(value) } } } })
+  runInNewContext(source, { navigator: { userAgent: 'Safari', platform: 'MacIntel', language: 'en' }, window: { __ModuleLoader__: { load(value: unknown) { modules.push(value) } } } })
   return modules
 }
-
 function requireRuntime(name: string): unknown {
   if (name === 'react') return React
   if (name === 'react/jsx-runtime') return jsxRuntime
@@ -27,9 +26,8 @@ function requireRuntime(name: string): unknown {
 }
 
 describe('built client factory', () => {
-  it('loads once, registers owned resources, and renders the translated pill', async () => {
-    const source = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
-    const modules = loadModule(source)
+  it('registers three owned entries, composes spread props, and refreshes the section label on locale change', async () => {
+    const modules = loadModule(await readFile(new URL('../lib/client.js', import.meta.url), 'utf8'))
     expect(modules).toHaveLength(1)
     const module = modules[0]
     if (!module || typeof module !== 'object' || !('id' in module) || !('factory' in module) || typeof module.factory !== 'function') throw new Error('Invalid module registration')
@@ -38,42 +36,42 @@ describe('built client factory', () => {
     if (!exports || typeof exports !== 'object' || !('inject' in exports) || !('apply' in exports) || typeof exports.apply !== 'function') throw new Error('Invalid plugin exports')
     expect(exports.inject).toEqual(['slots', 'locale'])
     const locales: { name: string; dictionaries: { en: Dictionary; zh: Dictionary } }[] = []
-    const entries: { options: { name: string; id: string; locale: string; inject: () => Face }; component: ComponentType<PillProps> }[] = []
+    const entries: { options: Options; component: ComponentType<EntryProps>; disposed: boolean }[] = []
     const injected: string[] = []
     const effects: (() => void)[] = []
     let disposedLocale = false
-    let disposedSlot = false
+    let language = 'en'
+    let changed = () => {}
+    let createdActors = 0
     exports.apply({
       effect(callback: () => () => void) { effects.push(callback()) },
+      on(name: string, listener: () => void) { expect(name).toBe('locale/change'); changed = listener; return () => { changed = () => {} } },
       locale: {
-        subscribe: () => () => {},
-        getSnapshot: () => ({ active: 'en' }),
-        register(name: string, dictionaries: { en: Dictionary; zh: Dictionary }) {
-          locales.push({ name, dictionaries })
-          return () => { disposedLocale = true }
-        },
+        subscribe: () => () => {}, getSnapshot: () => ({ active: language }),
+        bind: () => (key: LocaleKey) => language === 'zh' ? zh[key] : en[key],
+        register(name: string, dictionaries: { en: Dictionary; zh: Dictionary }) { locales.push({ name, dictionaries }); return () => { disposedLocale = true } },
       },
       slots: {
         inject(name: string, callback: () => () => void) { injected.push(name); effects.push(callback()) },
-        register(options: { name: string; id: string; locale: string; inject: () => Face }, component: ComponentType<PillProps>) {
-          entries.push({ options, component })
-          return () => { disposedSlot = true }
-        },
+        register(options: Options, component: ComponentType<EntryProps>) { const entry = { options, component, disposed: false }; entries.push(entry); return () => { entry.disposed = true } },
       },
-    }, () => createHandkey())
+    }, () => { createdActors++; return createHandkey() })
     expect(locales).toEqual([{ name: namespace, dictionaries: { en, zh } }])
-    expect(injected).toEqual(['shell.overlay'])
-    expect(entries).toHaveLength(1)
-    const entry = entries[0]
-    if (!entry) throw new Error('Missing overlay entry')
-    expect(entry.options).toMatchObject({ name: 'shell.overlay', id: 'onepassword-approval.pill', locale: namespace })
-    // Same composition as the dsh renderer: the registration's inject() result is spread into props.
-    const markup = renderToStaticMarkup(createElement(entry.component, { t: key => en[key], ...entry.options.inject() }))
-    expect(markup).toContain(en['pill.register'])
-    expect(markup).toContain('pointer-events: auto')
-    expect(markup).toContain('position: fixed')
+    expect(injected).toEqual(['settings.section', 'conversation.input.dock', 'shell.overlay'])
+    expect(entries.map(entry => ({ name: entry.options.name, id: entry.options.id, order: entry.options.order }))).toEqual([
+      { name: 'settings.section', id: 'onepassword-approval', order: 100 },
+      { name: 'conversation.input.dock', id: 'onepassword-approval.pending', order: 30 },
+      { name: 'shell.overlay', id: 'onepassword-approval.dialog', order: undefined },
+    ])
+    for (const entry of entries) {
+      const markup = renderToStaticMarkup(createElement(entry.component, { t: key => en[key], close: () => {}, ...entry.options.inject() }))
+      if (entry.options.name === 'settings.section') { expect(entry.options.label?.()).toBe('Handkey'); expect(markup).toContain('Register this browser'); expect(markup).toContain('Broker URL') }
+      else expect(markup).toBe('')
+    }
+    expect(createdActors).toBe(1)
+    language = 'zh'; changed()
+    expect(entries[0]?.disposed).toBe(true); expect(entries).toHaveLength(4); expect(entries[3]?.options.label?.()).toBe('Handkey')
     effects.reverse().forEach(dispose => dispose())
-    expect(disposedLocale).toBe(true)
-    expect(disposedSlot).toBe(true)
+    expect(disposedLocale).toBe(true); expect(entries.every(entry => entry.disposed)).toBe(true)
   })
 })

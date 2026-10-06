@@ -8,7 +8,13 @@ export const styles = `
 .opa-root :focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 4px; }
 .opa-root .opa-primary { background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); }
 .opa-root .opa-primary:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover); }
-.opa-pill { position: fixed; right: 16px; bottom: 16px; z-index: 999; max-width: calc(100% - 32px); box-shadow: var(--dsw-elevation-prominent); }
+.opa-section { pointer-events: auto; display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+.opa-section h2 { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; }
+.opa-section > p { margin: 0; }
+.opa-session-rows > div { padding: 16px 0; border-bottom: 1px solid var(--dsw-alias-border-l2); }
+.opa-dock { width: 100%; padding: 4px 12px; font-size: 13px; line-height: 20px; }
+.opa-dock > p { margin: 0; padding: 8px 0; }
+.opa-root .opa-dock-button { width: 100%; text-align: left; padding: 8px 12px; border-radius: var(--dsw-radius-md); }
 .opa-root .opa-accent { border: 2px solid var(--dsw-alias-state-business-primary); }
 .opa-backdrop { pointer-events: auto; position: fixed; inset: 0; z-index: 1000; background: var(--dsw-alias-bg-mask-1); display: flex; align-items: center; justify-content: center; padding: 24px; }
 .opa-dialog { pointer-events: auto; width: min(720px, 100%); max-height: 100%; display: flex; flex-direction: column; border-radius: var(--dsw-radius-panel); background: var(--dsw-alias-bg-layer-2); box-shadow: var(--dsw-elevation-prominent); overflow: hidden; }

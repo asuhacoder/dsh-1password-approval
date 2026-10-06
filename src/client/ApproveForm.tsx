@@ -7,15 +7,11 @@ import { Headline } from './RequestCard.js'
 import type { LocaleKey } from './locale.js'
 import type { Translate } from './store.js'
 
-export function approvalOf(snapshot: Snapshot) {
-  return snapshot.approval
-}
-
 export function ApproveForm({ handkey, snapshot, ids, t, onDismiss }: {
   handkey: Handkey; snapshot: Snapshot; ids: readonly RequestId[]; t: Translate; onDismiss: () => void
 }) {
   const [message, setMessage] = useState<LocaleKey | null>(null)
-  const run = approvalOf(snapshot)
+  const run = snapshot.approval
   if (run) return <>
     {run.kind === 'running' && <p>{t('approve.runningHint')}</p>}
     <ol className="opa-stack" aria-live="polite">{run.items.map(item => <li className="opa-card" key={item.id}>

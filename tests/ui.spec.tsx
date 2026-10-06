@@ -4,7 +4,10 @@ import { userEvent } from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Root } from '../src/client/Root.js'
 import { en } from '../src/client/locale.js'
-import type { Translate } from '../src/client/store.js'
+import { Dock } from '../src/client/Dock.js'
+import { Settings } from '../src/client/Settings.js'
+import { createUiStore } from '../src/client/store.js'
+import type { Face, Translate } from '../src/client/store.js'
 import { KEY, SECOND_KEY, NOW, created, deferred, harness, iso, json, wire } from './helpers.js'
 
 const t: Translate = (key, params) => {
@@ -13,11 +16,16 @@ const t: Translate = (key, params) => {
   return template.replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name] ?? ''))
 }
 afterEach(cleanup)
-function mount(actor: ReturnType<typeof harness>) {
-  render(<Root t={t} handkey={() => actor.handkey} language={{ subscribe: () => () => {}, getSnapshot: () => 'en' }} />)
+function mount(actor: ReturnType<typeof harness>, settings = false, ui = createUiStore()) {
+  const face: Face = { handkey: () => actor.handkey, ui, language: { subscribe: () => () => {}, getSnapshot: () => 'en' } }
+  render(<><Dock t={t} {...face} session={{}} input={{ draft: '', attachmentIds: [], draftRev: 0, phase: 'plain', occurrences: [], queue: [] }} /><Root t={t} {...face} />{(settings || actor.handkey.getSnapshot().kind === 'register') && <Settings t={t} {...face} close={() => {}} />}</>)
   return userEvent.setup()
 }
-async function open(user: ReturnType<typeof userEvent.setup>) { await user.click(await screen.findByRole('button', { name: /Register handkey|pending approvals|Approval progress/ })) }
+async function open(user: ReturnType<typeof userEvent.setup>) {
+  if (screen.queryByRole('button', { name: 'Register this browser' }) && !screen.queryByRole('button', { name: 'Approval progress' })) return
+  const controls = await screen.findAllByRole('button', { name: /pending approvals|Approval progress/ })
+  const first = controls[0]; if (!first) throw new Error('Missing dock opener'); await user.click(first)
+}
 function keyInput() { const input = screen.getByLabelText('Device key'); if (!(input instanceof HTMLInputElement)) throw new Error('Key input missing'); return input }
 function leak(actor: ReturnType<typeof harness>, keys = [KEY]) {
   for (const key of keys) {
@@ -37,11 +45,37 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
 }
 
  describe('approval overlay with real Handkey actor', () => {
+  it('keeps unregistered and zero-pending dock states empty while settings retains registration and review', async () => {
+    const actor = harness(); const user = mount(actor)
+    expect(screen.getByRole('button', { name: 'Register this browser' }).textContent).toBe('Register this browser')
+    expect(screen.queryByRole('dialog')).toBeNull(); expect(document.querySelector('.opa-dock')).toBeNull()
+    actor.queue('POST', '/v1/devices/device/sessions', json(created())); await fillRegistration(user); await user.click(screen.getByRole('button', { name: 'Register this browser' }))
+    await screen.findByText('0 pending approvals'); expect(document.querySelector('.opa-dock')).toBeNull()
+    expect(screen.getByText('https://broker.example').tagName).toBe('DD'); expect(screen.getByText('device').tagName).toBe('DD')
+    await user.click(screen.getByRole('button', { name: 'Review approvals' })); expect(screen.getByRole('dialog').textContent).toContain('No pending requests.')
+    await user.keyboard('{Escape}'); expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('keeps session-limit recovery in the shared settings store across remounts', async () => {
+    const actor = harness(); actor.queue('POST', '/v1/devices/device/sessions', json({}, 409)); const ui = createUiStore()
+    let user = mount(actor, true, ui); await fillRegistration(user); await user.click(screen.getByRole('button', { name: 'Register this browser' })); await screen.findByText(en['sessionLimit.explanation'])
+    cleanup(); user = mount(actor, true, ui)
+    expect(screen.getByRole('button', { name: 'List sessions' }).textContent).toBe('List sessions'); expect(keyInput().value).toBe('')
+    expect(screen.queryByRole('dialog')).toBeNull(); expect(document.querySelector('.opa-dock')).toBeNull(); leak(actor)
+  })
+
+  it('keeps registration again inline and restores the active session on cancel', async () => {
+    const actor = harness(true); const user = mount(actor, true); await screen.findByText('0 pending approvals')
+    await user.click(screen.getByRole('button', { name: 'Register again' })); expect(screen.getByRole('button', { name: 'Register this browser' }).textContent).toBe('Register this browser'); expect(screen.queryByRole('dialog')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Cancel' })); expect(screen.getByText('https://broker.example').tagName).toBe('DD'); expect(screen.getByRole('button', { name: 'Review approvals' }).textContent).toBe('Review approvals')
+  })
+
   it('registers, consumes the key synchronously, and shows the SSE-listed count', async () => {
     const actor = harness(); actor.pending([wire()]); actor.queue('POST', '/v1/devices/device/sessions', json(created()))
     const user = mount(actor); await open(user); await fillRegistration(user)
     const input = keyInput(); fireEvent.submit(input.closest('form')!)
     expect(input.value).toBe('')
+    await screen.findByRole('button', { name: '1 pending approvals' }); await open(user)
     await screen.findByRole('checkbox', { name: 'Select r1' })
     expect(screen.getByRole('button', { name: '1 pending approvals' })).toBeDefined()
     const call = actor.calls.find(call => call.path === '/v1/devices/device/sessions')
@@ -126,8 +160,8 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
 
   it('unregisters with the view token and returns to registration', async () => {
     const actor = harness(true); actor.pending([wire()]); actor.queue('POST', '/v1/sessions/browser/revoke', json({ status: 'revoked' }))
-    const user = mount(actor); await open(user); await screen.findByRole('checkbox'); await user.click(screen.getByRole('button', { name: 'Unregister this browser' }))
-    await screen.findByRole('button', { name: 'Register this browser' }); expect(actor.persistence.read()).toBeNull()
+    const user = mount(actor, true); await user.click(screen.getByRole('button', { name: 'Unregister this browser' }))
+    await screen.findByRole('button', { name: 'Register this browser' }); expect(actor.persistence.read()).toBeNull(); expect(document.querySelector('.opa-dock')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull()
     const call = actor.calls.find(call => call.path === '/v1/sessions/browser/revoke'); expect(call?.body).toBeUndefined(); expect(call?.headers.get('Authorization')).toBe('Bearer view-only')
   })
 
@@ -167,7 +201,7 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
   it('retains stopped progress across session end and re-registration until dismissed', async () => {
     const actor = harness(true); actor.pending([wire('r1'), wire('r2')]); actor.queue('POST', '/v1/requests/r1/approve', json({}, 401)); actor.queue('GET', '/v1/requests/r1', json({}, 401))
     actor.queue('POST', '/v1/devices/device/sessions', json(created()))
-    const user = mount(actor); await open(user); await user.click(await screen.findByRole('checkbox', { name: 'Select r1' })); await user.click(screen.getByRole('checkbox', { name: 'Select r2' })); await user.click(screen.getByRole('button', { name: 'Approve selected (2)' })); await user.type(keyInput(), KEY); await user.click(screen.getByRole('button', { name: 'Approve' }))
+    const user = mount(actor, true); await open(user); await user.click(await screen.findByRole('checkbox', { name: 'Select r1' })); await user.click(screen.getByRole('checkbox', { name: 'Select r2' })); await user.click(screen.getByRole('button', { name: 'Approve selected (2)' })); await user.type(keyInput(), KEY); await user.click(screen.getByRole('button', { name: 'Approve' }))
     await screen.findByText('Done · Session ended'); expect(screen.getByText('Done · Not sent')).toBeDefined(); expect(screen.getByText('Batch stopped: Session ended')).toBeDefined()
     expect(screen.getByText(en['register.rejected'])).toBeDefined(); expect(actor.handkey.getSnapshot()).toMatchObject({ kind: 'register', approval: { kind: 'finished', stopped: 'session-ended' } })
     actor.pending([]); await user.type(keyInput(), SECOND_KEY); await user.click(screen.getByRole('button', { name: 'Register this browser' }))
@@ -179,14 +213,14 @@ async function fillRegistration(user: ReturnType<typeof userEvent.setup>, key = 
   it('returns to registration with the rejected session reason after a list 401', async () => {
     const actor = harness(true); actor.pending([wire()]); const user = mount(actor); await open(user); await screen.findByRole('checkbox')
     actor.status(401); await act(async () => actor.handkey.refresh())
-    expect(screen.getByText(en['register.rejected'])).toBeDefined(); expect(screen.getByRole('button', { name: 'Register this browser' })).toBeDefined()
+    expect(screen.getAllByText(en['settings.registerPointer'])).toHaveLength(2); expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Register this browser' })).toBeNull()
   })
 
   it('labels the dialog, traps forward and reverse focus, and returns focus on Escape and backdrop', async () => {
-    const actor = harness(); const user = mount(actor); const pill = screen.getByRole('button', { name: 'Register handkey' }); await open(user)
+    const actor = harness(true); actor.pending([wire()]); const user = mount(actor); const pill = await screen.findByRole('button', { name: '1 pending approvals' }); await open(user)
     const dialog = screen.getByRole('dialog', { name: 'Handkey approvals' }); expect(dialog.getAttribute('aria-modal')).toBe('true'); expect(document.activeElement).toBe(dialog)
     await user.tab(); expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
-    await user.tab({ shift: true }); expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Register this browser' }))
+    await user.tab({ shift: true }); expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Deny' }))
     await user.tab(); expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
     await user.keyboard('{Escape}'); expect(screen.queryByRole('dialog')).toBeNull(); expect(document.activeElement).toBe(pill)
     await open(user); const backdrop = document.querySelector('.opa-backdrop'); if (!backdrop) throw new Error('Backdrop missing'); await user.click(backdrop); expect(document.activeElement).toBe(pill)
