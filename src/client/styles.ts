@@ -12,7 +12,7 @@ export const styles = `
 .opa-section h2 { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; }
 .opa-section > p { margin: 0; }
 .opa-session-rows > div { padding: 16px 0; border-bottom: 1px solid var(--dsw-alias-border-l2); }
-.opa-dock { width: 100%; padding: 4px 12px; font-size: 13px; line-height: 20px; }
+.opa-dock { box-sizing: border-box; width: 100%; padding: 4px 16px; font-size: 13px; line-height: 20px; }
 .opa-dock > p { margin: 0; padding: 8px 0; }
 .opa-root .opa-dock-button { width: 100%; text-align: left; padding: 8px 12px; border-radius: var(--dsw-radius-md); }
 .opa-root .opa-accent { border: 2px solid var(--dsw-alias-state-business-primary); }

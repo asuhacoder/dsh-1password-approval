@@ -3,7 +3,7 @@ export const namespace = 'onepassword-approval'
 export const en = {
   'pill.pending': '{count} pending approvals',
   'settings.title': 'Handkey',
-  'settings.description': 'Register this browser to review secret requests from Handkey.',
+  'settings.description': 'Review and approve secret requests from Handkey in this browser.',
   'settings.openApprovals': 'Review approvals',
   'settings.registerPointer': 'Register this browser again in Settings > Handkey.',
   'panel.title': 'Handkey approvals',
@@ -129,7 +129,7 @@ export type LocaleKey = keyof typeof en
 export const zh: Record<LocaleKey, string> = {
   'pill.pending': '{count} 个待审批请求',
   'settings.title': 'Handkey',
-  'settings.description': '注册此浏览器，以审查 Handkey 的秘密请求。',
+  'settings.description': '在此浏览器中审查并批准 Handkey 的秘密请求。',
   'settings.openApprovals': '查看审批请求',
   'settings.registerPointer': '请在“设置 > Handkey”中重新注册此浏览器。',
   'panel.title': 'Handkey 审批',
