@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import manifest from '../package.json' with { type: 'json' }
 
-const peers = ['@deepseek-ai/dsh-skill', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-ui-renderer', '@deepseek-ai/dsh-client-ui-layout', '@deepseek-ai/dsh-client-locale']
+const peers = ['@deepseek-ai/dsh-skill', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-ui-renderer', '@deepseek-ai/dsh-client-ui-layout', '@deepseek-ai/dsh-client-locale', '@deepseek-ai/dsh-client-ui-settings', '@deepseek-ai/dsh-client-ui-conversation']
 
 describe('package bundle', () => {
   it('publishes both halves and display metadata', async () => {
@@ -20,7 +20,7 @@ describe('package bundle', () => {
       },
       dsh: {
         bundle: { patch: './cordis.patch.yml' },
-        client: { platform: 'web', immediately: true, inject: ['@deepseek-ai/dsh-client-ui-layout', '@deepseek-ai/dsh-client-locale'] },
+        client: { platform: 'web', immediately: true, inject: ['@deepseek-ai/dsh-client-ui-layout', '@deepseek-ai/dsh-client-locale', '@deepseek-ai/dsh-client-ui-settings', '@deepseek-ai/dsh-client-ui-conversation'] },
       },
     })
     expect(manifest.files).toEqual(['lib/', 'cordis.patch.yml', 'locale/*.json', 'icon.svg', 'README.md', 'LICENSE'])
