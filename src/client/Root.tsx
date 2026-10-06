@@ -35,7 +35,7 @@ export function Root({ t, handkey: createHandkey, language: languageStore }: Roo
   const open = view.kind !== 'closed'
   const run = approvalOf(snapshot)
   const count = snapshot.kind === 'active' ? snapshot.pending.length : 0
-  const navigate = (next: View) => dispatch({ kind: 'navigate', view: next })
+  const navigate = (next: View) => { setNotice(null); dispatch({ kind: 'navigate', view: next }) }
   const close = () => navigate({ kind: 'closed' })
 
   useEffect(() => {

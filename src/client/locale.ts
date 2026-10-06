@@ -118,7 +118,7 @@ export const en = {
   'approve.stopped': 'Batch stopped: {reason}',
   'approve.runningHint': 'Closing this panel only hides it. Approval continues in this tab.',
   'outcome.done': 'Done',
-  'deny.finished': '{count} requests denied or already decided.',
+  'deny.finished': 'Denied or already decided: {count}.',
 }
 
 export type LocaleKey = keyof typeof en

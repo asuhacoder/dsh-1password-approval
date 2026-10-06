@@ -44,15 +44,16 @@ export function RequestCard({ request, t, language, now, selected, disabled, onS
   onSelect: () => void; onDeny: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const long = request.reason.length > 180 || request.reason.includes('\n')
   return <article className="opa-card">
     <div className="opa-headline"><Headline request={request} t={t} /><time>{countdown(request.deadline, now, language)}</time></div>
     <ul className="opa-secrets">{request.secrets.map(secret => <li key={secret.key}><Secret secret={secret} t={t} /></li>)}</ul>
-    <strong>{t('card.reason')}</strong><p className={expanded ? '' : 'opa-clamp'}>{request.reason}</p>
-    <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{t(expanded ? 'card.collapse' : 'card.expand')}</button>
+    <strong>{t('card.reason')}</strong><p className={expanded || !long ? '' : 'opa-clamp'}>{request.reason}</p>
+    {long && <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{t(expanded ? 'card.collapse' : 'card.expand')}</button>}
     <p><span className="opa-muted">{t('card.source')} · </span>{request.source || t('card.localSocket')}</p>
     <p>{request.lease.kind === 'single-use' ? t('lease.singleUse') : t('lease.window', { minutes: number(request.lease.seconds / 60, language), uses: number(request.lease.maxUses, language) })}</p>
     <ul className="opa-chips">{request.cautions.map(caution => <li className="opa-warning" key={caution}>{t(cautionKey(caution))}</li>)}</ul>
     <details><summary>{t('card.details')}</summary><Details operation={request.operation} t={t} /></details>
-    <div className="opa-actions">{request.operation.kind !== 'unrecognized' && <label className="opa-select"><input type="checkbox" checked={selected} disabled={disabled} onChange={onSelect} />{t('action.select')} {request.id}</label>}<button type="button" disabled={disabled} onClick={onDeny}>{t('action.deny')}</button></div>
+    <div className="opa-actions">{request.operation.kind !== 'unrecognized' && <label className="opa-select"><input type="checkbox" aria-label={`${t('action.select')} ${request.id}`} checked={selected} disabled={disabled} onChange={onSelect} />{t('action.select')}</label>}<button type="button" disabled={disabled} onClick={onDeny}>{t('action.deny')}</button></div>
   </article>
 }

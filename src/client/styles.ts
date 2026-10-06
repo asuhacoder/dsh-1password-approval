@@ -29,7 +29,8 @@ export const styles = `
 .opa-secrets { margin: 12px 0; }
 .opa-muted, .opa-root small { color: var(--dsw-alias-label-secondary); }
 .opa-secrets small { display: block; }
-.opa-warning { border: 1px solid var(--dsw-alias-state-business-primary); background: var(--dsw-alias-bg-layer-1); padding: 8px; border-radius: var(--dsw-radius-md); }
+.opa-dialog:focus-visible { outline: none; }
+.opa-warning { border: 1px solid var(--dsw-alias-state-warn-primary); background: var(--dsw-alias-bg-layer-1); padding: 8px; border-radius: var(--dsw-radius-md); }
 .opa-chips { flex-direction: row; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .opa-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .opa-select { display: flex; align-items: center; gap: 8px; min-height: 40px; }
