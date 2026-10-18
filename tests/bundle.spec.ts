@@ -39,11 +39,19 @@ describe('package bundle', () => {
 
   it('gates the current prerelease and pins development APIs', () => {
     expect(manifest.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.4')
+    const expectedRange = '>=0.2.0-rc.2 <0.2.1-0 || >=0.2.1-0 <0.2.2-0 || >=0.2.2-0 <0.2.3-0 || >=0.2.3-0 <0.2.4-0 || >=0.2.4-0 <0.2.5-0 || >=0.2.5-0 <0.2.6-0 || >=0.2.6-0 <0.2.7-0 || >=0.2.7-0 <0.2.8-0 || >=0.2.8-0 <0.2.9-0 || >=0.2.9-0 <0.3.0-0'
     for (const [name, range] of Object.entries(manifest.peerDependencies)) {
       if (!peers.includes(name)) continue
-      expect(range).toBe('>=0.2.0-rc.2 <0.3.0')
-      expect(satisfies('0.2.0-rc.2', range, { includePrerelease: true })).toBe(true)
-      expect(satisfies('0.3.0', range, { includePrerelease: true })).toBe(false)
+      expect(range).toBe(expectedRange)
+      expect(satisfies('0.2.0-rc.2', range)).toBe(true)
+      expect(satisfies('0.2.1-alpha.0', range)).toBe(true)
+      expect(satisfies('0.2.1-rc.2', range)).toBe(true)
+      expect(satisfies('0.2.1', range)).toBe(true)
+      expect(satisfies('0.2.2-alpha.1', range)).toBe(true)
+      expect(satisfies('0.2.9-beta.5', range)).toBe(true)
+      expect(satisfies('0.3.0-0', range)).toBe(false)
+      expect(satisfies('0.3.0', range)).toBe(false)
+      expect(satisfies('0.2.0-rc.1', range)).toBe(false)
     }
     expect(Object.keys(manifest.peerDependencies).filter(name => name.startsWith('@deepseek-ai/dsh-')).sort()).toEqual(peers.sort())
     for (const [name, version] of Object.entries(manifest.devDependencies)) {
