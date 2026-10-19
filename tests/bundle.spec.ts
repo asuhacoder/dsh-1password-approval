@@ -55,7 +55,7 @@ describe('package bundle', () => {
     }
     expect(Object.keys(manifest.peerDependencies).filter(name => name.startsWith('@deepseek-ai/dsh-')).sort()).toEqual(peers.sort())
     for (const [name, version] of Object.entries(manifest.devDependencies)) {
-      if (peers.includes(name)) expect(version).toBe('0.2.0-rc.2')
+      if (peers.includes(name)) expect(version).toBe('0.2.1-rc.2')
     }
   })
 })
