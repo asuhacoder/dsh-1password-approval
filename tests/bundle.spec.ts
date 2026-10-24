@@ -46,6 +46,7 @@ describe('package bundle', () => {
       expect(satisfies('0.2.0-rc.2', range)).toBe(true)
       expect(satisfies('0.2.1-alpha.0', range)).toBe(true)
       expect(satisfies('0.2.1-rc.2', range)).toBe(true)
+      expect(satisfies('0.2.1-rc.3', range)).toBe(true)
       expect(satisfies('0.2.1', range)).toBe(true)
       expect(satisfies('0.2.2-alpha.1', range)).toBe(true)
       expect(satisfies('0.2.9-beta.5', range)).toBe(true)
@@ -55,7 +56,7 @@ describe('package bundle', () => {
     }
     expect(Object.keys(manifest.peerDependencies).filter(name => name.startsWith('@deepseek-ai/dsh-')).sort()).toEqual(peers.sort())
     for (const [name, version] of Object.entries(manifest.devDependencies)) {
-      if (peers.includes(name)) expect(version).toBe('0.2.1-rc.2')
+      if (peers.includes(name)) expect(version).toBe('0.2.1-rc.3')
     }
   })
 })
