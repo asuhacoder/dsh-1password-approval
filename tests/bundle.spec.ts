@@ -38,7 +38,7 @@ describe('package bundle', () => {
   })
 
   it('gates the current prerelease and pins development APIs', () => {
-    expect(manifest.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.4')
+    expect(manifest.peerDependencies['@deepseek-ai/cordis']).toBe('^4.0.4 || ~4.0.6-alpha.1')
     const expectedRange = '>=0.2.0-rc.2 <0.2.1-0 || >=0.2.1-0 <0.2.2-0 || >=0.2.2-0 <0.2.3-0 || >=0.2.3-0 <0.2.4-0 || >=0.2.4-0 <0.2.5-0 || >=0.2.5-0 <0.2.6-0 || >=0.2.6-0 <0.2.7-0 || >=0.2.7-0 <0.2.8-0 || >=0.2.8-0 <0.2.9-0 || >=0.2.9-0 <0.3.0-0'
     for (const [name, range] of Object.entries(manifest.peerDependencies)) {
       if (!peers.includes(name)) continue
