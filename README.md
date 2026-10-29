@@ -4,7 +4,7 @@ A DeepSeek Harness plugin for reviewing Handkey approval requests. The host regi
 
 ## Status
 
-Registration, request review, denial, sequential approval progress, and session-limit recovery are implemented. Automated tests use the real `handkey-client` actor with scripted HTTP responses and SSE streams. The flows were also run by hand in dsh 0.2.0-rc.2 on desktop Chromium against a `--dev` broker. 1Password autofill on iOS Safari is not yet verified.
+Registration, request review, denial, sequential approval progress, and session-limit recovery are implemented. Automated tests use the real `handkey-client` actor with scripted HTTP responses and SSE streams. They run against pinned dsh 0.2.1-rc.5. The flows were also run by hand in dsh 0.2.0-rc.2 on desktop Chromium against a `--dev` broker. 1Password autofill on iOS Safari is not yet verified.
 
 ## Compatibility
 
